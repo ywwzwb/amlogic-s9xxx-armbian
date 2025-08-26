@@ -17,6 +17,7 @@ GitHub Actions is a service launched by Microsoft that provides a virtual server
     - [5.2 Scheduled Compilation](#52-scheduled-compilation)
     - [5.3 Customizing Default System Configuration](#53-customizing-default-system-configuration)
     - [5.4 Expanding Github Actions Compilation Space Using Logical Volumes](#54-expanding-github-actions-compilation-space-using-logical-volumes)
+    - [5.5 Build Armbian Docker image](#55-build-armbian-docker-image)
   - [6. Saving the System](#6-saving-the-system)
   - [7. Downloading the System](#7-downloading-the-system)
   - [8. Installing Armbian to EMMC](#8-installing-armbian-to-emmc)
@@ -30,7 +31,7 @@ GitHub Actions is a service launched by Microsoft that provides a virtual server
       - [8.2.3 Installation method for FastRhino R68S](#823-installation-method-for-fastrhino-r68s)
       - [8.2.4 Installation method for Beikeyun](#824-installation-method-for-beikeyun)
       - [8.2.5 Installation method for Chainedbox-L1-Pro](#825-installation-method-for-chainedbox-l1-pro)
-      - [8.2.6 Installation method for lckfb-tspi](#826-Installation-method-for-lckfb-tspi)
+      - [8.2.6 Installation method for lckfb-tspi](#826-installation-method-for-lckfb-tspi)
     - [8.3 Allwinner Series Installation Method](#83-allwinner-series-installation-method)
   - [9. Compiling Armbian Kernel](#9-compiling-armbian-kernel)
     - [9.1 How to Add Custom Kernel Patches](#91-how-to-add-custom-kernel-patches)
@@ -114,7 +115,7 @@ Now you can Fork the repository. Open the repository https://github.com/ophub/am
 
 ## 4. Customization instructions for personalized Armbian system files
 
-The system compilation process is controlled in the [.github/workflows/build-armbian.yml](../../.github/workflows/build-armbian.yml) file. There are other .yml files in the workflows directory that implement different functions. The system is compiled in real time using Armbian's current official code, and related parameters can be referred to the official documentation.
+The system compilation process is controlled in the [.github/workflows/build-armbian-server-image.yml](../.github/workflows/build-armbian-server-image.yml) file. There are other .yml files in the workflows directory that implement different functions. The system is compiled in real time using Armbian's current official code, and related parameters can be referred to the official documentation.
 
 ```yaml
 - name: Compile Armbian [ ${{ inputs.set_release }} ]
@@ -145,7 +146,7 @@ In your repository's navigation bar, click the Actions button, then sequentially
 
 ### 5.2 Scheduled Compilation
 
-In the [.github/workflows/build-armbian.yml](../../.github/workflows/build-armbian.yml) file, use Cron to set scheduled compilation. The five different positions respectively represent minutes (0 - 59) / hours (0 - 23) / date (1 - 31) / month (1 - 12) / day of the week (0 - 6)(Sunday - Saturday). Set the time by modifying the value at different positions. The system uses UTC standard time by default, please convert according to the time zone of your country.
+In the [.github/workflows/build-armbian-server-image.yml](../../.github/workflows/build-armbian-server-image.yml) file, use Cron to set scheduled compilation. The five different positions respectively represent minutes (0 - 59) / hours (0 - 23) / date (1 - 31) / month (1 - 12) / day of the week (0 - 6)(Sunday - Saturday). Set the time by modifying the value at different positions. The system uses UTC standard time by default, please convert according to the time zone of your country.
 
 ```yaml
 schedule:
@@ -162,7 +163,7 @@ When compiling locally, specify with the `-b` parameter. When compiling in Actio
 
 ### 5.4 Expanding Github Actions Compilation Space Using Logical Volumes
 
-The default compile space for Github Actions is 84G, with about 50G available after considering the system and necessary software packages. When compiling all firmware, you may encounter an issue with insufficient space, which can be addressed by using logical volumes to expand the compile space to approximately 110G. Refer to the method in the [.github/workflows/build-armbian.yml](../.github/workflows/build-armbian.yml) file, and use the commands below to create a logical volume. Then, use the path of the logical volume during the compilation process.
+The default compile space for Github Actions is 84G, with about 50G available after considering the system and necessary software packages. When compiling all firmware, you may encounter an issue with insufficient space, which can be addressed by using logical volumes to expand the compile space to approximately 110G. Refer to the method in the [.github/workflows/build-armbian-server-image.yml](../.github/workflows/build-armbian-server-image.yml) file, and use the commands below to create a logical volume. Then, use the path of the logical volume during the compilation process.
 
 ```yaml
 - name: Create simulated physical disk
@@ -184,9 +185,13 @@ The default compile space for Github Actions is 84G, with about 50G available af
     df -Th
 ```
 
+### 5.5 Build Armbian Docker image
+
+The method for creating the [Docker](https://hub.docker.com/u/ophub) image of the Armbian system can refer to the [armbian_docker](../compile-kernel/tools/script/docker) build script.
+
 ## 6. Saving the System
 
-The system save setting is also controlled in the [.github/workflows/build-armbian.yml](../../.github/workflows/build-armbian.yml) file. We upload the compiled system to the Releases provided by the official GitHub via script automatically.
+The system save setting is also controlled in the [.github/workflows/build-armbian-server-image.yml](../../.github/workflows/build-armbian-server-image.yml) file. We upload the compiled system to the Releases provided by the official GitHub via script automatically.
 
 ```yaml
 - name: Upload Armbian image to Release
@@ -421,9 +426,9 @@ armbian-update -k 6.1
 mkdir -p /usr/local/toolchain
 cd /usr/local/toolchain
 # Download the compilation tools
-wget https://github.com/ophub/kernel/releases/download/dev/arm-gnu-toolchain-13.3.rel1-aarch64-aarch64-none-elf.tar.xz
+wget https://github.com/ophub/kernel/releases/download/dev/arm-gnu-toolchain-14.3.rel1-aarch64-aarch64-none-linux-gnu.tar.xz
 # Extract
-tar -Jxf arm-gnu-toolchain-13.3.rel1-aarch64-aarch64-none-elf.tar.xz
+tar -Jxf arm-gnu-toolchain-14.3.rel1-aarch64-aarch64-none-linux-gnu.tar.xz
 # Install additional compilation dependencies (optional; you can manually install missing components based on errors).
 armbian-kernel -u
 
@@ -434,10 +439,10 @@ cd ~/
 git clone https://github.com/jwrdegoede/rtl8189ES_linux
 cd rtl8189ES_linux
 # Set up the compilation environment
-gun_file="arm-gnu-toolchain-13.3.rel1-aarch64-aarch64-none-elf.tar.xz"
+gun_file="arm-gnu-toolchain-14.3.rel1-aarch64-aarch64-none-linux-gnu.tar.xz"
 toolchain_path="/usr/local/toolchain"
 toolchain_name="gcc"
-export CROSS_COMPILE="${toolchain_path}/${gun_file//.tar.xz/}/bin/aarch64-none-elf-"
+export CROSS_COMPILE="${toolchain_path}/${gun_file//.tar.xz/}/bin/aarch64-none-linux-gnu-"
 export CC="${CROSS_COMPILE}gcc"
 export LD="${CROSS_COMPILE}ld.bfd"
 export ARCH="arm64"
@@ -918,21 +923,29 @@ ip -c -br address
 
 ##### 12.7.2.4 Modify Network Connection MAC Address
 
-Modify (clone) the `MAC Address` on the network connection `ether1` and take effect immediately to solve the problem of LAN MAC address conflict.
+Modify (clone) the `MAC Address` on the network connection `eth0` and take effect immediately to solve the problem of LAN MAC address conflict.
 
 *Applicable to wired connections / wireless connections
 
 ```shell
+# Use the `nmcli connection show` command to view the network interface name
+nmcli connection show
+# The returned result contains the network interface name, such as 'Wired connection 1'
+NAME                UUID                                  TYPE      DEVICE
+Wired connection 1  24d63dc7-c46f-3bf1-912f-1c33eb94338b  ethernet  eth0
+lo                  35ca24e5-bdc0-4658-8ac8-435ee22e07f3  loopback  lo
+Wired connection 2  59660b21-b460-30e0-8cb3-89b886556955  ethernet  --
+
 # Set ENV
-MYCON=ether1                  # Network connection name, note to match the network interface type
-MYTYPE=ethernet               # Network interface type = Wired network card / Wireless network card = ethernet / wifi
-MYMAC=12:34:56:78:9A:BC       # New MAC address
+MYCON='Wired connection 1'    # Network connection name, note to match the network interface type
+MYTYPE='802-3-ethernet'       # Network interface type = Wired network card / Wireless network card
+                              #                        = 802-3-ethernet     / 802-11-wireless
+MYMAC='12:34:56:78:9A:BC'     # Set new MAC address
 
 # Chg CON
-nmcli connection modify ${MYCON} \
-${MYTYPE}.cloned-mac-address ${MYMAC}
-nmcli connection up ${MYETH}
-ip -c -br address
+nmcli connection modify "${MYCON}" ${MYTYPE}.cloned-mac-address ${MYMAC}
+nmcli connection up "${MYCON}"
+ip -c a show "${MYCON}"
 ```
 
 * When creating or modifying some network parameters, the network connection may be disconnected and reconnected to the network.
@@ -1414,7 +1427,7 @@ During the Armbian image construction, these u-boot files will be written into t
 
 #### 12.15.4 Add Process Control Files
 
-Add the corresponding `BOARD` option to `armbian_board` in the [yml workflow control file](../../.github/workflows/build-armbian.yml), which supports use in `Actions` on github.com.
+Add the corresponding `BOARD` option to `armbian_board` in the [yml workflow control file](../../.github/workflows/build-armbian-server-image.yml), which supports use in `Actions` on github.com.
 
 ### 12.16 How to Resolve the Issue of I/O Errors While Writing to eMMC
 
